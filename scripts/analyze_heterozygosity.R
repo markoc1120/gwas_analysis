@@ -4,7 +4,7 @@ library(dplyr)
 d_miss <- read.table(snakemake@input[['imiss']],header=T)
 d_het <- read.table(snakemake@input[['het']],header=T)
 
-d_het <- d_het %>% 
+d_het <- d_het %>%
   mutate(HET = (N.NM. - O.HOM.)/ N.NM.)
 df <- dplyr::inner_join(d_miss,d_het)
 
@@ -22,7 +22,7 @@ ggplot(data=df) +
   geom_vline(mapping = aes(xintercept = l_tail))
 
 filtered_df <- df %>% filter(
-  HET < r_tail, 
+  HET < r_tail,
   HET > l_tail,
   # F_MISS <= 0.4
 )

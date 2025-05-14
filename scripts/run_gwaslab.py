@@ -13,7 +13,9 @@ mysumstats_linear = gl.Sumstats(
 )
 
 mysumstats_linear.plot_mqq(mode="qqm", anno=True, save="plots/linear_gwaslab_mqq.png")
-mysumstats_linear.plot_mqq(mode="b", bwindowsizekb=500, save="plots/linear_gwaslab_manhattan.png")
+mysumstats_linear.plot_mqq(
+    mode="b", bwindowsizekb=500, save="plots/linear_gwaslab_manhattan.png"
+)
 
 mysumstats_mlma = gl.Sumstats(
     "gwas/mlma_clean.tsv",
@@ -30,4 +32,6 @@ mysumstats_mlma = gl.Sumstats(
 )
 
 mysumstats_mlma.plot_mqq(mode="qqm", anno=True, save="plots/mlma_gwaslab_mqq.png")
-mysumstats_mlma.plot_mqq(mode="b", bwindowsizekb=500, save="plots/mlma_gwaslab_manhattan.png")
+mysumstats_mlma.plot_mqq(
+    mode="b", bwindowsizekb=500, save="plots/mlma_gwaslab_manhattan.png"
+)
