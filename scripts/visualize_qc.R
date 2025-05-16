@@ -41,21 +41,13 @@ p1 <- ggplot(qc_steps, aes(x = factor(step), y = samples)) +
   theme_minimal() +
   scale_x_discrete(labels = c('Initial', 'Sex Check', 'Heterozygosity', 'Relatedness', 'Final'))
 
-p2 <- ggplot(group_data, aes(x = group, y = samples)) +
-  geom_bar(stat = 'identity', fill = 'darkgreen') +
-  geom_text(aes(label = samples), vjust = -0.5, size = 3.5) +
-  labs(x = 'Group', y = 'Number of Samples',
-       title = 'Sample Size per Group') +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
 group_data_long <- group_data %>%
   pivot_longer(cols = starts_with('variants'),
                names_to = 'filter_status',
                values_to = 'variant_count') %>%
   mutate(filter_status = ifelse(filter_status == 'variants_before', 'Before Filtering', 'After Filtering'))
 
-p3 <- ggplot(group_data_long, aes(x = group, y = variant_count, fill = filter_status)) +
+p2 <- ggplot(group_data_long, aes(x = group, y = variant_count, fill = filter_status)) +
   geom_bar(stat = 'identity', position = 'dodge') +
   geom_text(aes(label = variant_count), position = position_dodge(width = 0.9),
             vjust = -0.5, size = 3) +
@@ -69,7 +61,7 @@ group_data <- group_data %>%
   mutate(percent_retained = variants_after / variants_before * 100)
 
 
-grid.arrange(p1, p2, p3, ncol = 2)
+grid.arrange(p1, p2, ncol = 2)
 
-ggsave('plots/qc_visualization.png', arrangeGrob(p1, p2, p3, ncol = 2),
-       width = 12, height = 14, dpi = 300)
+ggsave('plots/qc_visualization.png', arrangeGrob(p1, p2, ncol = 2),
+       width = 12, height = 7, dpi = 300)

@@ -305,7 +305,6 @@ rule plot_pca:
         eigenval = f"{PCA_DIR}/gwas.eigenval"
     output:
         pca_plot = f"{PLOT_DIR}/pca_plot.png",
-        scree_plot = f"{PLOT_DIR}/scree_plot.png"
     script:
         "scripts/plot_pca.R"
 
@@ -414,7 +413,7 @@ rule run_gwaslab_plots:
         """
         python {input.script}
         """
-        
+
 #
 # -----PGS PREDICTION-----
 #
@@ -447,7 +446,7 @@ rule create_train_dataset:
         """
         plink --bfile {FINAL_DIR}/QC_output_final --keep {input.train_samples} --make-bed --out {PGS_DIR}/pgs_train_data
         """
-        
+
 rule create_test_dataset:
     input:
         bed = f"{FINAL_DIR}/QC_output_final.bed",
@@ -462,7 +461,7 @@ rule create_test_dataset:
         """
         plink --bfile {FINAL_DIR}/QC_output_final --keep {input.test_samples} --make-bed --out {PGS_DIR}/pgs_test_data
         """
-        
+
 rule gwas_on_training_data:
     input:
         bed = f"{PGS_DIR}/pgs_train_data.bed",
@@ -476,7 +475,7 @@ rule gwas_on_training_data:
         """
         plink --bfile {PGS_DIR}/pgs_train_data --pheno {input.phenotype} --covar {input.covariates} --linear --allow-no-sex --out {PGS_DIR}/gwas_train
         """
-        
+
 rule extract_add_results_train:
     input:
         linear_results = f"{PGS_DIR}/gwas_train.assoc.linear"
@@ -486,7 +485,7 @@ rule extract_add_results_train:
         """
         awk 'NR==1 || $5=="ADD"' {input.linear_results} > {output.add_results}
         """
-        
+
 rule ld_clumping:
     input:
         bed = f"{PGS_DIR}/pgs_train_data.bed",
@@ -499,7 +498,7 @@ rule ld_clumping:
         """
         plink --bfile {PGS_DIR}/pgs_train_data --clump {input.gwas_results} --clump-p1 0.0001 --clump-p2 0.01 --clump-r2 0.50 --clump-kb 500 --out {PGS_DIR}/pgs_clumped
         """
-        
+
 rule extract_clumped_snps:
     input:
         clumped = f"{PGS_DIR}/pgs_clumped.clumped"
@@ -507,12 +506,23 @@ rule extract_clumped_snps:
         snp_list = f"{PGS_DIR}/pgs_clumped_snps.txt"
     shell:
         """
-        awk 'NR>1 {{print $3}}' {input.clumped} > {output.snp_list}
+        awk 'NR>1 && $3 != "" {{print $3}}' {input.clumped} > {output.snp_list}
         """
-        
+
+rule filter_clumped_snps:
+    input:
+        snp_list = f"{PGS_DIR}/pgs_clumped_snps.txt",
+        gwas_results = f"{PGS_DIR}/gwas_train.ADD.assoc.linear"
+    output:
+        clumped_gwas_results = f"{PGS_DIR}/gwas_train.clumped.linear"
+    shell:
+        """
+        grep -w -f {input.snp_list} {input.gwas_results} > {output.clumped_gwas_results}
+        """
+
 rule create_score_files:
     input:
-        gwas_results = f"{PGS_DIR}/gwas_train.ADD.assoc.linear"
+        clumped_gwas_results = f"{PGS_DIR}/gwas_train.clumped.linear"
     output:
         score_file = f"{PGS_DIR}/score_file_p{{threshold}}.txt"
     params:
@@ -521,9 +531,9 @@ rule create_score_files:
         threshold = "|".join(THRESHOLDS)
     shell:
         """
-        awk '$9 < {params.threshold} {{print $2, $4, $7}}' {input.gwas_results} > {output.score_file}
+        awk '$9 < {params.threshold} {{print $2, $4, $7}}' {input.clumped_gwas_results} > {output.score_file}
         """
-        
+
 rule calculate_pgs:
     input:
         bed = f"{PGS_DIR}/pgs_test_data.bed",
@@ -538,7 +548,7 @@ rule calculate_pgs:
         """
         plink --bfile {PGS_DIR}/pgs_test_data --score {input.score_file} 1 2 3 --out {PGS_DIR}/pgs_results_p{wildcards.threshold}
         """
-        
+
 rule evaluate_pgs:
     input:
         pgs_profiles = expand(f"{PGS_DIR}/pgs_results_p{{threshold}}.profile", threshold=THRESHOLDS),
